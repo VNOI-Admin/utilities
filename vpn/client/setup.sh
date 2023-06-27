@@ -1,5 +1,4 @@
 #!/bin/bash
 
-SERVER_ADDRESS="100.0.0.1"
-
-curl -s "$SERVER_ADDRESS/configs/$USER.zip" > unzip - -d /etc/tinc/VNOICup
+wget -O vpn-cfg.zip "$SERVER_ADDRESS/configs/$USERNAME.zip"
+7z x -y -p$PASSWORD vpn-cfg.zip -o/etc/tinc/VNOICup
