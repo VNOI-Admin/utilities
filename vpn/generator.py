@@ -110,7 +110,7 @@ def create_all_users():
     central_config_zip = BytesIO(central_config_zip)
 
     with AESZipFile(central_config_zip, "a") as central_zip:
-        with open(path.join("data", "userlist.csv"), "r") as user_list_f:
+        with open(path.join("vpn", "data", "userlist.csv"), "r") as user_list_f:
             user_list = DictReader(user_list_f)
             for idx, user in enumerate(user_list):
                 username = user["Username"]
@@ -122,16 +122,16 @@ def create_all_users():
                 config_zip, client_hosts = generate_config(
                     username, password, subnet_address, central_hosts)
 
-                with open(path.join("data", "configs", f"{username}.zip"), "wb") as zip_f:
+                with open(path.join("vpn", "data", "configs", f"{username}.zip"), "wb") as zip_f:
                     zip_f.write(config_zip)
                 central_zip.writestr(f"hosts/{username}", client_hosts)
 
                 new_user_list.writerow(user)
 
-    with open(path.join("data", "central.zip"), "wb") as central_f:
+    with open(path.join("vpn", "data", "central.zip"), "wb") as central_f:
         central_f.write(central_config_zip.getvalue())
 
-    with open(path.join("data", "userlist1.csv"), "w") as user_list_new_f:
+    with open(path.join("vpn", "data", "userlist1.csv"), "w") as user_list_new_f:
         content = new_user_list_f.getvalue()
         content = "\n".join([line for line in content.splitlines() if line])
         print(content, file=user_list_new_f)
