@@ -122,7 +122,7 @@ def create_all_users():
                 config_zip, client_hosts = generate_config(
                     username, password, subnet_address, central_hosts)
 
-                with open(path.join("data", "static", f"{username}.zip"), "wb") as zip_f:
+                with open(path.join("data", "configs", f"{username}.zip"), "wb") as zip_f:
                     zip_f.write(config_zip)
                 central_zip.writestr(f"hosts/{username}", client_hosts)
 
