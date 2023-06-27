@@ -3,7 +3,7 @@ from os import path
 from csv import DictReader, DictWriter
 from io import BytesIO, StringIO
 from ipaddress import ip_address
-from zipfile import ZipFile
+from pyzipper import AESZipFile, WZ_AES
 import secrets
 from Crypto.PublicKey import RSA
 
@@ -60,11 +60,15 @@ def generate_tinc_down(subnet_address: str) -> bytes:
     return tinc_up.getvalue()
 
 
-def generate_config(username: str, subnet_address: str,
+def generate_config(username: str, password: str, subnet_address: str,
                     central_hosts: bytes | None) -> tuple[bytes, tuple[bytes, bytes]]:
     buffer = BytesIO()
 
-    with ZipFile(buffer, "w") as zip:
+    with AESZipFile(buffer, "w") as zip:
+        if password != "":
+            zip.setpassword(password.encode())
+            zip.setencryption(WZ_AES, nbits=256)
+
         private_key, public_key = generate_keypair()
         zip.writestr("rsa_key.priv", private_key)
         zip.writestr("rsa_key.pub", public_key)
@@ -83,30 +87,29 @@ def generate_config(username: str, subnet_address: str,
 
 def get_subnet_address(subnet_address: str, idx: int) -> str:
     expected_address = (BASE_SUBNET_ADDRESS + idx).exploded
-    if subnet_address != "" and subnet_address != expected_address:
+    if subnet_address != "" and subnet_address is not None and subnet_address != expected_address:
         print(f"subnet_address and expected_address doesn't match")
         return subnet_address
     return expected_address
 
 
 def get_password(password: str) -> str:
-    if password == "":
+    if password == "" or password is None:
         return "".join([secrets.choice(string.ascii_letters) for _ in range(8)])
     return password
 
 
 def create_all_users():
-
     new_user_list_f = StringIO()
     new_user_list = DictWriter(
         new_user_list_f, ["Username", "SubnetAddress", "Password"])
     new_user_list.writeheader()
 
     central_config_zip, central_hosts = generate_config(
-        "central", get_subnet_address("", 0), None)
+        "central", "", get_subnet_address("", 0), None)
     central_config_zip = BytesIO(central_config_zip)
 
-    with ZipFile(central_config_zip, "a") as central_zip:
+    with AESZipFile(central_config_zip, "a") as central_zip:
         with open(path.join("data", "userlist.csv"), "r") as user_list_f:
             user_list = DictReader(user_list_f)
             for idx, user in enumerate(user_list):
@@ -117,9 +120,9 @@ def create_all_users():
 
                 print(f"Config for {username}")
                 config_zip, client_hosts = generate_config(
-                    username, subnet_address, central_hosts)
+                    username, password, subnet_address, central_hosts)
 
-                with open(path.join("data", "static", f"{username}.{password}.zip"), "wb") as zip_f:
+                with open(path.join("data", "static", f"{username}.zip"), "wb") as zip_f:
                     zip_f.write(config_zip)
                 central_zip.writestr(f"hosts/{username}", client_hosts)
 
