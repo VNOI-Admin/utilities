@@ -1,0 +1,7 @@
+:80 {
+    handle /configs/* {
+        uri strip_prefix /configs
+		root * vpn/data/configs/
+		file_server
+    }
+}
