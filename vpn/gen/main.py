@@ -5,10 +5,11 @@ from os import path
 from csv import DictWriter, DictReader
 from ipaddress import ip_address
 
-
+RSA_LENGTH = 2048
 IP_PREFIX_WIDTH = 8
-USER_BASE_SUBNET = ip_address("10.0.0.1")
-SERVICE_BASE_SUBNET = ip_address("10.1.0.1")
+BASE_SUBNET = ip_address("10.0.0.0")
+USER_BASE_SUBNET = ip_address("10.0.0.0")
+SERVICE_BASE_SUBNET = ip_address("10.1.0.0")
 
 
 class VPNNode:
@@ -24,7 +25,7 @@ class VPNNode:
         self.__generate_scripts()
 
     def __generate_keypair(self):
-        private = RSA.generate(2048)
+        private = RSA.generate(RSA_LENGTH)
         public = private.public_key()
         self.private_key = private.export_key().decode()
         self.public_key = public.export_key().decode()
@@ -49,10 +50,10 @@ class VPNNode:
         self.tinc_up = "#!/bin/bash\n"
         self.tinc_up += "ip link set $INTERFACE up\n"
         self.tinc_up += f"ip addr add {self.subnet_ip}/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
-        self.tinc_up += f"ip route add 10.0.0.0/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
+        self.tinc_up += f"ip route add {BASE_SUBNET.exploded}/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
 
         self.tinc_down = "#!/bin/bash\n"
-        self.tinc_down += f"ip route del 10.0.0.0/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
+        self.tinc_down += f"ip route del {BASE_SUBNET.exploded}/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
         self.tinc_down += f"ip addr del {self.subnet_ip}/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
         self.tinc_down += "ip link set $INTERFACE down\n"
 
@@ -78,7 +79,7 @@ class VPNNode:
 
             zip_f.writestr("tinc-up", self.tinc_up)
             zip_f.writestr("tinc-down", self.tinc_up)
-            
+
         return buffer.getvalue()
 
 
@@ -89,7 +90,8 @@ def create_users() -> list[VPNNode]:
             name, password = node["Name"], node["Password"]
             subnet_ip = node["SubnetIP"]
 
-            expected_subnet_ip = (USER_BASE_SUBNET + len(user_nodes)).exploded
+            expected_subnet_ip = (
+                USER_BASE_SUBNET + len(user_nodes) + 1).exploded
             assert expected_subnet_ip == subnet_ip or subnet_ip == "" or subnet_ip is None
 
             user_nodes.append(VPNNode(name, password, expected_subnet_ip))
@@ -108,10 +110,10 @@ def write_users(user_nodes: list[VPNNode]):
             "SubnetIP": node.subnet_ip})
         with open(path.join("vpn", "data", "user_configs", f"{node.name}.zip"), "wb") as f:
             f.write(node.export_zip())
-    
-    file_content = buffer.getvalue()
-    file_content = "\n".join([line for line in file_content.splitlines() if line])
 
+    file_content = buffer.getvalue()
+    file_content = "\n".join(
+        [line for line in file_content.splitlines() if line])
 
     with open(path.join("vpn", "data", "user1.csv"), "w") as node_list_f:
         node_list_f.write(file_content)
@@ -125,7 +127,7 @@ def create_services() -> list[VPNNode]:
             public_ip, subnet_ip = node["PublicIP"], node["SubnetIP"]
 
             expected_subnet_ip = (SERVICE_BASE_SUBNET +
-                                  len(service_nodes)).exploded
+                                  len(service_nodes) + 1).exploded
             assert expected_subnet_ip == subnet_ip or subnet_ip == "" or subnet_ip is None
 
             service_nodes.append(
@@ -144,10 +146,10 @@ def write_services(service_nodes: list[VPNNode]):
             "SubnetIP": node.subnet_ip})
         with open(path.join("vpn", "data", "service_configs", f"{node.name}.zip"), "wb") as f:
             f.write(node.export_zip())
-    
-    file_content = buffer.getvalue()
-    file_content = "\n".join([line for line in file_content.splitlines() if line])
 
+    file_content = buffer.getvalue()
+    file_content = "\n".join(
+        [line for line in file_content.splitlines() if line])
 
     with open(path.join("vpn", "data", "service1.csv"), "w") as node_list_f:
         node_list_f.write(file_content)
@@ -160,7 +162,7 @@ def create_all():
     for service in service_nodes:
         for user in user_nodes:
             user.connect_to(service)
-    
+
     for service in service_nodes[1:]:
         service.connect_to(service_nodes[0])
 
