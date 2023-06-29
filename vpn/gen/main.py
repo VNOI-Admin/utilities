@@ -60,7 +60,7 @@ class VPNNode:
     def connect_to(self, endpoint: "VPNNode"):
         self.endpoints_hosts.append(endpoint.hosts)
         endpoint.endpoints_hosts.append(self.hosts)
-        self.tinc_conf += f"ConnectTo = {endpoint.subnet_ip}\n"
+        self.tinc_conf += f"ConnectTo = {endpoint.name}\n"
 
     def export_zip(self) -> bytes:
         buffer = BytesIO()
