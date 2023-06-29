@@ -123,7 +123,7 @@ def create_services() -> list[VPNNode]:
     service_nodes = []
     with open(path.join("vpn", "data", "service.csv"), "r") as node_list_f:
         for node in DictReader(node_list_f):
-            name = node["Name"]
+            name, password = node["Name"], node["Password"]
             public_ip, subnet_ip = node["PublicIP"], node["SubnetIP"]
 
             expected_subnet_ip = (SERVICE_BASE_SUBNET +
@@ -131,17 +131,18 @@ def create_services() -> list[VPNNode]:
             assert expected_subnet_ip == subnet_ip or subnet_ip == "" or subnet_ip is None
 
             service_nodes.append(
-                VPNNode(name, "", expected_subnet_ip, public_ip))
+                VPNNode(name, password, expected_subnet_ip, public_ip))
     return service_nodes
 
 
 def write_services(service_nodes: list[VPNNode]):
     buffer = StringIO()
-    writer = DictWriter(buffer, ["Name", "PublicIP", "SubnetIP"])
+    writer = DictWriter(buffer, ["Name", "Password", "PublicIP", "SubnetIP"])
     writer.writeheader()
     for node in service_nodes:
         writer.writerow({
             "Name": node.name,
+            "Password": node.password,
             "PublicIP": node.public_ip,
             "SubnetIP": node.subnet_ip})
         with open(path.join("vpn", "data", "service_configs", f"{node.name}.zip"), "wb") as f:
