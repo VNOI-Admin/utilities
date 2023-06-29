@@ -6,7 +6,7 @@ from csv import DictWriter, DictReader
 from ipaddress import ip_address
 
 RSA_LENGTH = 2048
-IP_PREFIX_WIDTH = 8
+GLOBAL_PREFIX_WIDTH = 8
 BASE_SUBNET = ip_address("10.0.0.0")
 USER_BASE_SUBNET = ip_address("10.0.0.0")
 SERVICE_BASE_SUBNET = ip_address("10.1.0.0")
@@ -35,7 +35,7 @@ class VPNNode:
             hosts_file = f"Address = {self.public_ip}\n"
         except AttributeError:
             hosts_file = ""
-        hosts_file += f"Subnet = {self.subnet_ip}/{IP_PREFIX_WIDTH}\n\n"
+        hosts_file += f"Subnet = {self.subnet_ip}/32\n\n"
         hosts_file += self.public_key + "\n"
         self.hosts = self.name, hosts_file
         self.endpoints_hosts = [self.hosts]
@@ -49,12 +49,12 @@ class VPNNode:
     def __generate_scripts(self):
         self.tinc_up = "#!/bin/bash\n"
         self.tinc_up += "ip link set $INTERFACE up\n"
-        self.tinc_up += f"ip addr add {self.subnet_ip}/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
-        self.tinc_up += f"ip route add {BASE_SUBNET.exploded}/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
+        self.tinc_up += f"ip addr add {self.subnet_ip}/32 dev $INTERFACE\n"
+        self.tinc_up += f"ip route add {BASE_SUBNET.exploded}/{GLOBAL_PREFIX_WIDTH} dev $INTERFACE\n"
 
         self.tinc_down = "#!/bin/bash\n"
-        self.tinc_down += f"ip route del {BASE_SUBNET.exploded}/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
-        self.tinc_down += f"ip addr del {self.subnet_ip}/{IP_PREFIX_WIDTH} dev $INTERFACE\n"
+        self.tinc_down += f"ip route del {BASE_SUBNET.exploded}/{GLOBAL_PREFIX_WIDTH} dev $INTERFACE\n"
+        self.tinc_down += f"ip addr del {self.subnet_ip}/32 dev $INTERFACE\n"
         self.tinc_down += "ip link set $INTERFACE down\n"
 
     def connect_to(self, endpoint: "VPNNode"):
