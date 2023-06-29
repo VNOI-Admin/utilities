@@ -11,7 +11,7 @@ IP_PREFIX_WIDTH = 32
 VPN_NAME = "VNOICup"
 BASE_SUBNET_ADDRESS = ip_address("10.0.0.1")
 CENTRAL_IP = ip_address("100.0.0.1")
-
+default_endpoints = []
 
 def generate_keypair() -> tuple[bytes, bytes]:
     """Generate a random key pair"""
@@ -30,11 +30,12 @@ def generate_hosts(subnet_address: str, public_key: bytes, ip: str | None = None
     return host_config.getvalue()
 
 
-def generate_tinc_config(username: str) -> bytes:
+def generate_tinc_config(username: str, *args) -> bytes:
     tinc_conf = StringIO()
     print(f"Name = {username}", file=tinc_conf)
     print("AddressFamily = ipv4", file=tinc_conf)
-    print(f"ConnectTo = central", file=tinc_conf)
+    for endpoint in args+default_endpoints:
+        print(f"ConnectTo = {endpoint}", file=tinc_conf)
     return tinc_conf.getvalue()
 
 
