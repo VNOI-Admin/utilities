@@ -4,7 +4,6 @@ from pyzipper import AESZipFile, WZ_AES
 from os import path
 from csv import DictWriter, DictReader
 from ipaddress import ip_address
-from itertools import combinations
 
 
 IP_PREFIX_WIDTH = 8
