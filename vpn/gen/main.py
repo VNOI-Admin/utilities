@@ -108,7 +108,7 @@ def write_users(user_nodes: list[VPNNode]):
             "Name": node.name,
             "Password": node.password,
             "SubnetIP": node.subnet_ip})
-        with open(path.join("vpn", "data", "user_configs", f"{node.name}.zip"), "wb") as f:
+        with open(path.join("vpn", "data", "configs", f"{node.name}.zip"), "wb") as f:
             f.write(node.export_zip())
 
     file_content = buffer.getvalue()
@@ -145,7 +145,7 @@ def write_services(service_nodes: list[VPNNode]):
             "Password": node.password,
             "PublicIP": node.public_ip,
             "SubnetIP": node.subnet_ip})
-        with open(path.join("vpn", "data", "service_configs", f"{node.name}.zip"), "wb") as f:
+        with open(path.join("vpn", "data", "configs", f"{node.name}.zip"), "wb") as f:
             f.write(node.export_zip())
 
     file_content = buffer.getvalue()
