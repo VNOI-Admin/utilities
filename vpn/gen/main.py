@@ -44,7 +44,7 @@ class VPNNode:
         self.tinc_conf = f"Name = {self.name}\n"
         self.tinc_conf += "AddressFamily = ipv4\n"
         # Stop communication between contestants
-        self.tinc_conf += "DirectOnly = yes\n"
+        self.tinc_conf += "TunnelServer = yes\n"
 
     def __generate_scripts(self):
         self.tinc_up = "#!/bin/bash\n"
