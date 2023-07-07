@@ -10,6 +10,7 @@ GLOBAL_PREFIX_WIDTH = 8
 BASE_SUBNET = ip_address("10.0.0.0")
 USER_BASE_SUBNET = ip_address("10.0.0.0")
 SERVICE_BASE_SUBNET = ip_address("10.1.0.0")
+CENTRAL_BASE_SUBNET = ip_address("10.1.0.1")
 
 
 class VPNNode:
@@ -43,8 +44,9 @@ class VPNNode:
     def __generate_tinc_conf(self):
         self.tinc_conf = f"Name = {self.name}\n"
         self.tinc_conf += "AddressFamily = ipv4\n"
-        # Stop communication between contestants
-        self.tinc_conf += "TunnelServer = yes\n"
+        # Stop communication between contestants, except for the central server
+        if self.subnet_ip != CENTRAL_BASE_SUBNET.exploded:
+            self.tinc_conf += "TunnelServer = yes\n"
 
     def __generate_scripts(self):
         self.tinc_up = "#!/bin/bash\n"
