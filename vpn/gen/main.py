@@ -13,7 +13,7 @@ SERVICE_BASE_SUBNET = ip_address("10.1.0.0")
 
 
 class VPNNode:
-    def __init__(self, name: str, password: str, subnet_ip: str, public_ip: str | None = None):
+    def __init__(self, name: str, password: str, subnet_ip: str, public_ip = None):
         self.name = name
         self.password = password
         self.subnet_ip = subnet_ip
@@ -143,7 +143,7 @@ def write_services(service_nodes: list[VPNNode]):
         writer.writerow({
             "Name": node.name,
             "Password": node.password,
-            "PublicIP": node.public_ip,
+            "PublicIP": node.public_ip if hasattr(node, "public_ip") else "",
             "SubnetIP": node.subnet_ip})
         with open(path.join("vpn", "data", "configs", f"{node.name}.zip"), "wb") as f:
             f.write(node.export_zip())
