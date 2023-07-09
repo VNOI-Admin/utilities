@@ -67,7 +67,7 @@ class VPNNode:
 
         return buffer.getvalue()
 
-    def __init_node(self, name: str, password: str, subnet_ip: str, public_ip: str | None) -> 'VPNNode':
+    def __init_node(self, name: str, password: str, subnet_ip: str, public_ip: str) -> 'VPNNode':
         self.name = name
         self.password = password
         self.subnet_ip = subnet_ip
@@ -85,7 +85,7 @@ class VPNNode:
 
     @staticmethod
     def from_meta(name: str, password: str,
-                  subnet_ip: str, public_ip: str | None) -> 'VPNNode':
+                  subnet_ip: str, public_ip: str) -> 'VPNNode':
         self = VPNNode()
         self.key = RSA.generate(RSA_LENGTH)
         self.__init_node(name, password, subnet_ip, public_ip)
@@ -93,7 +93,7 @@ class VPNNode:
 
     @staticmethod
     def from_cached(f: str, name: str, password: str,
-                    subnet_ip: str, public_ip: str | None) -> 'VPNNode':
+                    subnet_ip: str, public_ip: str) -> 'VPNNode':
         self = VPNNode()
         with AESZipFile(f, "r") as buffer:
             self.key = RSA.import_key(buffer.read(

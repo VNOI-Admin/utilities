@@ -53,7 +53,7 @@ class OldVersion(Version):
         super().__init__(name)
 
     def read_node(self, name: str, password: str,
-                  subnet_ip: str, public_ip: str | None = None) -> VPNNode:
+                  subnet_ip: str, public_ip: str = None) -> VPNNode:
         p = self.zip_path(name)
         if path.exists(p):
             return VPNNode.from_cached(p, name, password, subnet_ip, public_ip)
