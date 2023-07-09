@@ -44,7 +44,7 @@ class Version:
         return p
 
     def raw_path(self, name: str) -> str:
-        p = str(path.join(self._rawp, f"{name}.zip"))
+        p = str(path.join(self._rawp, name))
         return p
 
 
