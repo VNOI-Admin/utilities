@@ -26,8 +26,8 @@ class VPNNode:
     def __generate_tinc_conf(self) -> str:
         tinc_conf = f"Name = {self.name}\n"
         tinc_conf += "AddressFamily = ipv4\n"
-        # Stop communication between contestants
-        tinc_conf += "TunnelServer = yes\n"
+        # Stop communication if hosts file not present
+        tinc_conf += "StrictSubnets = yes\n"
         return tinc_conf
 
     def __generate_scripts(self) -> tuple[str, str]:
