@@ -1,8 +1,10 @@
 import config
-from os import path, makedirs
+from os import path, makedirs, chmod
+import stat
 from node import VPNNode
 from pyzipper import AESZipFile
 from io import BytesIO
+
 
 def zipfile_diff(a: bytes, b: bytes, password: str) -> bool:
     with AESZipFile(BytesIO(a), "r") as lhs, AESZipFile(BytesIO(b), "r") as rhs:
@@ -16,6 +18,7 @@ def zipfile_diff(a: bytes, b: bytes, password: str) -> bool:
             if lhs.read(filename) != rhs.read(filename):
                 return True
     return False
+
 
 class Version:
     def __init__(self, name: str):
@@ -50,12 +53,13 @@ class OldVersion(Version):
         super().__init__(name)
 
     def read_node(self, name: str, password: str,
-              subnet_ip: str, public_ip: str | None = None) -> VPNNode:
+                  subnet_ip: str, public_ip: str | None = None) -> VPNNode:
         p = self.zip_path(name)
         if path.exists(p):
             return VPNNode.from_cached(p, name, password, subnet_ip, public_ip)
         else:
             return VPNNode.from_meta(name, password, subnet_ip, public_ip)
+
 
 class NewVersion(Version):
     def __init__(self, old: OldVersion, name: str):
@@ -80,15 +84,17 @@ class NewVersion(Version):
         new_zip = self.zip_path(node.name)
         with open(new_zip, "wb") as f:
             f.write(new_content)
-        
+
         # Perform final check
         raw_path = self.raw_path(node.name)
         with AESZipFile(new_zip, "r") as f:
             f.setpassword(node.password.encode())
             makedirs(path.join(raw_path, "hosts"))
             for filename in f.namelist():
-                with open(path.join(raw_path, filename), "wb") as tf:
+                p = path.join(raw_path, filename)
+                with open(p, "wb") as tf:
                     tf.write(f.read(filename))
+                chmod(p, stat.S_IEXEC)
 
     def csv_path(self, name: str) -> str:
         return str(path.join(self._datap, f"{name}.csv"))
