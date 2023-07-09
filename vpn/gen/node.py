@@ -9,13 +9,10 @@ GLOBAL_PREFIX_WIDTH = 8
 
 
 class VPNNode:
-    @staticmethod
-    def __generate_keypair() -> tuple[bytes, bytes]:
-        private = RSA.generate(RSA_LENGTH)
-        public = private.public_key()
-        private_key = private.export_key().decode()
-        public_key = public.export_key().decode()
-        return private_key, public_key
+    def __generate_keypair(self) -> tuple[bytes, bytes]:
+        private_key = self.key.export_key()
+        public_key = self.key.public_key().export_key()
+        return private_key.decode(), public_key.decode()
 
     def __generate_hosts(self) -> tuple[str, str]:
         hosts_file = ""
@@ -78,6 +75,8 @@ class VPNNode:
             self.public_ip = public_ip
         else:
             self.public_ip = ""
+
+        self.private_key, self.public_key = self.__generate_keypair()
         self.hosts = self.__generate_hosts()
         self.endpoints_hosts = [self.hosts]
 
@@ -88,7 +87,7 @@ class VPNNode:
     def from_meta(name: str, password: str,
                   subnet_ip: str, public_ip: str | None) -> 'VPNNode':
         self = VPNNode()
-        self.private_key, self.public_key = self.__generate_keypair()
+        self.key = RSA.generate(RSA_LENGTH)
         self.__init_node(name, password, subnet_ip, public_ip)
         return self
 
@@ -97,8 +96,6 @@ class VPNNode:
                     subnet_ip: str, public_ip: str | None) -> 'VPNNode':
         self = VPNNode()
         with AESZipFile(f, "r") as buffer:
-            buffer.setpassword(password.encode())
-            self.private_key = buffer.read("rsa_key.priv").decode()
-            self.public_key = buffer.read("rsa_key.pub").decode()
+            self.key = RSA.import_key(buffer.read("rsa_key.priv", password.encode()))
         self.__init_node(name, password, subnet_ip, public_ip)
         return self
