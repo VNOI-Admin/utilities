@@ -96,6 +96,7 @@ class VPNNode:
                     subnet_ip: str, public_ip: str | None) -> 'VPNNode':
         self = VPNNode()
         with AESZipFile(f, "r") as buffer:
-            self.key = RSA.import_key(buffer.read("rsa_key.priv", password.encode()))
+            self.key = RSA.import_key(buffer.read(
+                "rsa_key.priv", password.encode()))
         self.__init_node(name, password, subnet_ip, public_ip)
         return self
