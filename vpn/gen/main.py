@@ -17,7 +17,7 @@ def read_csv_buffer(buffer: StringIO) -> str:
     return file_content
 
 
-def create_nodes(csv_path: str, base_subnet: ip_address) -> list[VPNNode]:
+def create_nodes(csv_path: str, base_subnet: ip_address) -> 'list[VPNNode]':
     nodes = []
     with open(path.join(csv_path), "r") as node_list_f:
         for node in DictReader(node_list_f):
@@ -33,7 +33,7 @@ def create_nodes(csv_path: str, base_subnet: ip_address) -> list[VPNNode]:
     return nodes
 
 
-def write_nodes(csv_path: str, nodes: list[VPNNode]):
+def write_nodes(csv_path: str, nodes: 'list[VPNNode]'):
     buffer = StringIO()
     writer = DictWriter(buffer, ["Name", "Password", "PublicIP", "SubnetIP"])
     writer.writeheader()

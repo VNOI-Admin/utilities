@@ -9,12 +9,12 @@ GLOBAL_PREFIX_WIDTH = 8
 
 
 class VPNNode:
-    def __generate_keypair(self) -> tuple[bytes, bytes]:
+    def __generate_keypair(self) -> 'tuple[bytes, bytes]':
         private_key = self.key.export_key()
         public_key = self.key.public_key().export_key()
         return private_key.decode(), public_key.decode()
 
-    def __generate_hosts(self) -> tuple[str, str]:
+    def __generate_hosts(self) -> 'tuple[str, str]':
         hosts_file = ""
         if self.public_ip != "":
             hosts_file = f"Address = {self.public_ip}\n"
@@ -30,7 +30,7 @@ class VPNNode:
         tinc_conf += "StrictSubnets = yes\n"
         return tinc_conf
 
-    def __generate_scripts(self) -> tuple[str, str]:
+    def __generate_scripts(self) -> 'tuple[str, str]':
         tinc_up = "#!/bin/bash\n"
         tinc_up += "ip link set $INTERFACE up\n"
         tinc_up += f"ip addr add {self.subnet_ip}/32 dev $INTERFACE\n"
@@ -42,7 +42,7 @@ class VPNNode:
         tinc_down += "ip link set $INTERFACE down\n"
         return tinc_up, tinc_down
 
-    def connect_to(self, endpoint: "VPNNode"):
+    def connect_to(self, endpoint: 'VPNNode'):
         self.endpoints_hosts.append(endpoint.hosts)
         endpoint.endpoints_hosts.append(self.hosts)
         self.tinc_conf += f"ConnectTo = {endpoint.name}\n"
