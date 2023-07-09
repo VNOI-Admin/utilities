@@ -36,15 +36,11 @@ class Version:
         """Zip path"""
         return str(path.join(self._datap, "configs"))
 
-    def zip_path(self, name: str) -> str | None:
-        if self.name == "-":
-            return None
+    def zip_path(self, name: str) -> str:
         p = str(path.join(self._zipp, f"{name}.zip"))
         return p
 
-    def raw_path(self, name: str) -> str | None:
-        if self.name == "-":
-            return None
+    def raw_path(self, name: str) -> str:
         p = str(path.join(self._rawp, f"{name}.zip"))
         return p
 

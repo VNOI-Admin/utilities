@@ -1,0 +1,3 @@
+Name,Password,PublicIP,SubnetIP
+CentralVPN,xyz,192.168.0.1,
+Printer,lmn,192.168.0.2,

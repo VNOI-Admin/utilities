@@ -1,2 +1,3 @@
 *.zip
 *.csv
+!*_example.csv
