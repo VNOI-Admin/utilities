@@ -70,10 +70,7 @@ class VPNNode:
 
         return buffer.getvalue()
 
-    @staticmethod
-    def from_meta(name: str, password: str,
-                  subnet_ip: str, public_ip: str | None = None) -> 'VPNNode':
-        self = VPNNode()
+    def __init_node(self, name: str, password: str, subnet_ip: str, public_ip: str | None) -> 'VPNNode':
         self.name = name
         self.password = password
         self.subnet_ip = subnet_ip
@@ -81,48 +78,27 @@ class VPNNode:
             self.public_ip = public_ip
         else:
             self.public_ip = ""
-
-        self.private_key, self.public_key = self.__generate_keypair()
         self.hosts = self.__generate_hosts()
         self.endpoints_hosts = [self.hosts]
 
         self.tinc_conf = self.__generate_tinc_conf()
         self.tinc_up, self.tinc_down = self.__generate_scripts()
+
+    @staticmethod
+    def from_meta(name: str, password: str,
+                  subnet_ip: str, public_ip: str | None) -> 'VPNNode':
+        self = VPNNode()
+        self.private_key, self.public_key = self.__generate_keypair()
+        self.__init_node(name, password, subnet_ip, public_ip)
         return self
 
     @staticmethod
     def from_cached(f: str, name: str, password: str,
-                    subnet_ip: str, public_ip: str | None = None) -> 'VPNNode':
+                    subnet_ip: str, public_ip: str | None) -> 'VPNNode':
         self = VPNNode()
-        self.name = name
-        self.password = password
-        self.subnet_ip = subnet_ip
-        if public_ip is not None:
-            self.public_ip = public_ip
-        else:
-            self.public_ip = ""
-
         with AESZipFile(f, "r") as buffer:
-            buffer.setpassword(self.password.encode())
-
-            def keypair():
-                self.private_key = buffer.read("rsa_key.priv").decode()
-                self.public_key = buffer.read("rsa_key.pub").decode()
-
-            def hosts():
-                self.hosts = name, buffer.read(f"hosts/{name}").decode()
-                self.endpoints_hosts = [self.hosts]
-
-            def scripts():
-                expected_up, expected_down = self.__generate_scripts()
-                current_up, current_down = \
-                    buffer.read("tinc-up").decode(), buffer.read("tinc-down").decode()
-                assert expected_up == current_up
-                assert expected_down == current_down
-                self.tinc_up, self.tinc_down = expected_up, expected_down
-
-            keypair()
-            hosts()
-            self.tinc_conf = self.__generate_tinc_conf()
-            scripts()
+            buffer.setpassword(password.encode())
+            self.private_key = buffer.read("rsa_key.priv").decode()
+            self.public_key = buffer.read("rsa_key.pub").decode()
+        self.__init_node(name, password, subnet_ip, public_ip)
         return self
