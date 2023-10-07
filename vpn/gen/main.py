@@ -117,7 +117,7 @@ def write_users(user_nodes: list[VPNNode]):
     file_content = "\n".join(
         [line for line in file_content.splitlines() if line])
 
-    with open(path.join("vpn", "data", "user1.csv"), "w") as node_list_f:
+    with open(path.join("vpn", "data", "user_out.csv"), "w") as node_list_f:
         node_list_f.write(file_content)
 
 
@@ -154,7 +154,7 @@ def write_services(service_nodes: list[VPNNode]):
     file_content = "\n".join(
         [line for line in file_content.splitlines() if line])
 
-    with open(path.join("vpn", "data", "service1.csv"), "w") as node_list_f:
+    with open(path.join("vpn", "data", "service_out.csv"), "w") as node_list_f:
         node_list_f.write(file_content)
 
 
