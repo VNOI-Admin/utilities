@@ -4,7 +4,7 @@ import socket
 from gevent.server import StreamServer
 
 from .rpc import rpc_method, RPCServiceServer, RPCServiceClient
-from ..config import get_service_address, ConfigError
+from config import get_service_address, ConfigError, ServiceCoord
 
 
 class Address:
@@ -14,7 +14,7 @@ class Address:
 
 
 class Service:
-    def __init__(self):
+    def __init__(self, shard=0):
         signal.signal(signal.SIGINT, lambda _1, _2: self.exit())
 
         self.name = self.__class__.__name__
@@ -22,7 +22,7 @@ class Service:
         self.remote_services = {}
 
         try:
-            address = get_service_address(self.name)
+            address = get_service_address(ServiceCoord(self.name, shard))
         except KeyError:
             raise ConfigError('Address for service %s not found' % self.name)
 
@@ -30,7 +30,7 @@ class Service:
 
     def _connection_handler(self, sock, addr):
         address = Address(addr[0], addr[1])
-        remote_service = RPCServiceServer(sock, address)
+        remote_service = RPCServiceServer(self, address)
         remote_service.handle(sock)
 
     def connect_to(self, coord, on_connect=None, on_disconnect=None):
@@ -49,6 +49,8 @@ class Service:
 
         if on_disconnect is not None:
             service.add_on_disconnect_handler(on_disconnect)
+
+        return service
 
     def exit(self):
         self.rpc_server.stop()

@@ -9,20 +9,20 @@ import gevent.socket
 import gevent.lock
 import gevent.event
 
-from ..config import get_service_address
+from config import get_service_address
 
 
 class RPCError(Exception):
     pass
 
 
-def rpc_method(method):
+def rpc_method(method, permission=None):
     method.rpc = True
     return method
 
 
 class RPCServiceBase:
-    MAX_MESSAGE_SIZE = 1024 * 1024
+    MAX_MESSAGE_SIZE = 1024 * 1024  # 1 MB
 
     def __init__(self, remote_address):
         self._local_address = None
@@ -244,7 +244,7 @@ class RPCServiceClient(RPCServiceBase):
         for family, type, proto, _canonname, sockaddr in addresses:
             try:
                 host, port, *rest = sockaddr
-                sock = gevent.socket(family, type, proto)
+                sock = socket.socket(family, type, proto)
                 sock.connect(sockaddr)
             except OSError:
                 continue

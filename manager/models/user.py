@@ -8,8 +8,8 @@ from pony.orm import Required, Set
 class User(db.Entity):
     username = Required(str, unique=True)
     password = Required(str)
-    public_key = Required(str, unique=True)  # User's public key. Used for encryption.
-    ip_address = Required(str)  # IP address of the user.
+    ip_address = Required(str, unique=True)  # IP address of the user.
+    is_online = Required(bool, default=False)  # Whether the user is online.
     printings = Set("Printing")  # Printings that the user has made.
 
     def __repr__(self):

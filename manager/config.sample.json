@@ -1,0 +1,11 @@
+{
+    "services": {
+        "UserService": [
+            ["localhost", 50051]
+        ]
+    },
+
+    "UserService": {
+        "handler_address": ["localhost", 50151]
+    }
+}

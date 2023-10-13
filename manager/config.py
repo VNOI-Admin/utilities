@@ -17,7 +17,7 @@ class ServiceCoord(namedtuple('ServiceCoord', ['name', 'shard'])):
 
 
 def get_service_address(service_coord: ServiceCoord):
-    return config['services'][service_coord.name][int(service_coord.shard)]
+    return Address(*config['services'][service_coord.name][int(service_coord.shard)])
 
 
 config = json.load(open('config.json'))
