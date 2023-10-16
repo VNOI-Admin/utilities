@@ -1,9 +1,11 @@
 import os
 
+from ping3 import ping
 from flask import Flask, send_file
 from flask_restful import Api, Resource, reqparse
 from pony.orm import db_session
 
+import gevent
 from gevent.pywsgi import WSGIServer
 
 from utilities.models import User, Printing
@@ -52,9 +54,36 @@ class UserLogin(Resource):
 
 
 class UserRPCServiceServer(RPCServiceServer):
+    def __init__(self, remote_address):
+        super().__init__(remote_address)
+
+        self._ping = None
+
+    @db_session
+    def ping(self):
+        while True:
+            ping_ = round(ping(self.remote_address.host) * 1000, 3)  # Ping in milliseconds
+            if not ping_:
+                self.user.is_online = False
+                self.user.ping = -1.0
+
+            if not self.user.is_online:
+                self.user.is_online = True
+            self.user.ping = ping_
+
+            gevent.sleep(config['ping_interval'])
+
     def handle(self, sock, user):
         self.user = user
+        self._ping = gevent.spawn(self.ping)
         return super().handle(sock)
+
+    @db_session
+    def disconnect(self):
+        self._ping.kill()
+        self._ping = None
+        self.user.set_offline()
+        return super().disconnect()
 
     def process_data(self, data):
         data = super().process_data(data)
