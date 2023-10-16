@@ -2,10 +2,9 @@
     "services": {
         "UserService": [
             ["localhost", 50051]
+        ],
+        "PrintingService": [
+            ["localhost", 50052]
         ]
-    },
-
-    "UserService": {
-        "handler_address": ["localhost", 50151]
     }
 }

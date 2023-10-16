@@ -9,7 +9,7 @@ import gevent.socket
 import gevent.lock
 import gevent.event
 
-from config import get_service_address
+from ..config import get_service_address
 
 
 class RPCError(Exception):

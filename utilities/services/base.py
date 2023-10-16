@@ -1,10 +1,11 @@
 import signal
 import socket
 
+import gevent
 from gevent.server import StreamServer
 
 from .rpc import rpc_method, RPCServiceServer, RPCServiceClient
-from config import get_service_address, ConfigError, ServiceCoord
+from ..config import get_service_address, ConfigError, ServiceCoord
 
 
 class Address:
@@ -15,7 +16,8 @@ class Address:
 
 class Service:
     def __init__(self, shard=0):
-        signal.signal(signal.SIGINT, lambda _1, _2: self.exit())
+        # gevent.signal_handler(signal.SIGTERM, self.exit)
+        gevent.signal_handler(signal.SIGINT, self.exit)
 
         self.name = self.__class__.__name__
 
@@ -58,9 +60,11 @@ class Service:
     def run(self):
         try:
             self.rpc_server.start()
-        except socket.gaierror:
+        except socket.gaierror as error:
+            print("Error starting service %s: %s" % (self.name, error))
             return False
-        except OSError:
+        except OSError as error:
+            print("Error starting service %s: %s" % (self.name, error))
             return False
 
         self.rpc_server.serve_forever()

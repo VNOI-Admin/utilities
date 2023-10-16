@@ -5,6 +5,10 @@ from os import path
 from csv import DictWriter, DictReader
 from ipaddress import ip_address
 
+from pony.orm import db_session
+
+from utilities.models import User
+
 RSA_LENGTH = 2048
 GLOBAL_PREFIX_WIDTH = 8
 BASE_SUBNET = ip_address("10.0.0.0")
@@ -14,7 +18,7 @@ CENTRAL_BASE_SUBNET = ip_address("10.1.0.1")
 
 
 class VPNNode:
-    def __init__(self, name: str, password: str, subnet_ip: str, public_ip = None):
+    def __init__(self, name: str, password: str, subnet_ip: str, public_ip=None):
         self.name = name
         self.password = password
         self.subnet_ip = subnet_ip
@@ -85,9 +89,10 @@ class VPNNode:
         return buffer.getvalue()
 
 
+@db_session
 def create_users() -> list[VPNNode]:
     user_nodes = []
-    with open(path.join("vpn", "data", "user.csv"), "r") as node_list_f:
+    with open(path.join("data", "user.csv"), "r") as node_list_f:
         for node in DictReader(node_list_f):
             name, password = node["Name"], node["Password"]
             subnet_ip = node["SubnetIP"]
@@ -97,6 +102,8 @@ def create_users() -> list[VPNNode]:
             assert expected_subnet_ip == subnet_ip or subnet_ip == "" or subnet_ip is None
 
             user_nodes.append(VPNNode(name, password, expected_subnet_ip))
+
+            User(username=name, password=password, ip_address=expected_subnet_ip)
     return user_nodes
 
 
@@ -110,20 +117,20 @@ def write_users(user_nodes: list[VPNNode]):
             "Name": node.name,
             "Password": node.password,
             "SubnetIP": node.subnet_ip})
-        with open(path.join("vpn", "data", "configs", f"{node.name}.zip"), "wb") as f:
+        with open(path.join("data", "configs", f"{node.name}.zip"), "wb") as f:
             f.write(node.export_zip())
 
     file_content = buffer.getvalue()
     file_content = "\n".join(
         [line for line in file_content.splitlines() if line])
 
-    with open(path.join("vpn", "data", "user_out.csv"), "w") as node_list_f:
+    with open(path.join("data", "user_out.csv"), "w") as node_list_f:
         node_list_f.write(file_content)
 
 
 def create_services() -> list[VPNNode]:
     service_nodes = []
-    with open(path.join("vpn", "data", "service.csv"), "r") as node_list_f:
+    with open(path.join("data", "service.csv"), "r") as node_list_f:
         for node in DictReader(node_list_f):
             name, password = node["Name"], node["Password"]
             public_ip, subnet_ip = node["PublicIP"], node["SubnetIP"]
@@ -147,14 +154,14 @@ def write_services(service_nodes: list[VPNNode]):
             "Password": node.password,
             "PublicIP": node.public_ip if hasattr(node, "public_ip") else "",
             "SubnetIP": node.subnet_ip})
-        with open(path.join("vpn", "data", "configs", f"{node.name}.zip"), "wb") as f:
+        with open(path.join("data", "configs", f"{node.name}.zip"), "wb") as f:
             f.write(node.export_zip())
 
     file_content = buffer.getvalue()
     file_content = "\n".join(
         [line for line in file_content.splitlines() if line])
 
-    with open(path.join("vpn", "data", "service_out.csv"), "w") as node_list_f:
+    with open(path.join("data", "service_out.csv"), "w") as node_list_f:
         node_list_f.write(file_content)
 
 
