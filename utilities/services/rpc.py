@@ -18,6 +18,7 @@ class RPCError(Exception):
 
 def rpc_method(method, permission=None):
     method.rpc = True
+    method.permission = permission
     return method
 
 

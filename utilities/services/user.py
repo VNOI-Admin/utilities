@@ -1,4 +1,5 @@
 import os
+import json
 
 from ping3 import ping
 from flask import Flask, send_file
@@ -89,6 +90,47 @@ class UserRPCServiceServer(RPCServiceServer):
         data = super().process_data(data)
         data['__params']['user'] = self.user  # Add user to params
         return data
+
+    def process_incoming_request(self, request):
+        if not {'__id', '__method', '__params'}.issubset(request.keys()):
+            self.disconnect()
+            return
+
+        id_ = request['__id']
+
+        self.pending_incoming_requests_threads.add(gevent.getcurrent())
+
+        response = {
+            '__id': id_,
+            '__data': None,
+            '__error': None
+        }
+
+        method_name = request['__method']
+
+        if not hasattr(self.local_service, method_name):
+            response['__error'] = 'Method not found'
+        else:
+            method = getattr(self.local_service, method_name)
+            if not getattr(method, 'rpc', False):
+                response['__error'] = 'Method not found'
+            elif not getattr(method, 'permission', None) == 'user':  # Restrict down to user
+                response['__error'] = 'Method not found'
+            else:
+                try:
+                    response['__data'] = method(*request['__params'])
+                except Exception as error:
+                    response['__error'] = "%s: %s\n%s" % (error.__class__.__name__, error, error.__traceback__)
+
+        try:
+            data = json.dumps(response).encode('utf-8')
+        except (TypeError, ValueError):
+            return
+
+        try:
+            self._write(data)
+        except OSError:
+            return
 
 
 class UserService(Service):
