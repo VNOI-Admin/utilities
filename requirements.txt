@@ -1,3 +1,5 @@
 pony
 gevent
 ping3
+pycryptodome
+pyzipper
