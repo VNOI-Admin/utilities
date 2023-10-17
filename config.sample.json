@@ -1,10 +1,16 @@
 {
     "services": {
         "UserService": [
-            ["localhost", 50051]
+            ["localhost", 8080]
         ],
         "PrintingService": [
-            ["localhost", 50052]
+            ["localhost", 8081]
         ]
-    }
+    },
+
+    "api": ["localhost", 8000],
+
+    "ping_interval": 5,
+
+    "database": "../../database.sqlite"
 }
