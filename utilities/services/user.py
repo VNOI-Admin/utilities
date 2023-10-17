@@ -42,9 +42,9 @@ class UserLogin(Resource):
         args = self.parser.parse_args()
         username = args['username'] or ""
         password = args['password'] or ""
-        user = User.get(username=username)
+        user = User.select(lambda u: u.username == username).first()
 
-        if user is None:
+        if not user:
             return {'error': 'User not found'}, 404
         elif not user.verify_password(password):
             return {'error': 'Incorrect password'}, 401
