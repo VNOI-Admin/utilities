@@ -1,5 +1,6 @@
 import os
 import json
+import socket
 
 from ping3 import ping
 from flask import Flask, send_file
@@ -63,6 +64,7 @@ class UserRPCServiceServer(RPCServiceServer):
     @db_session
     def ping(self):
         while True:
+            print("ping")
             ping_ = round(ping(self.remote_address.host) * 1000, 3)  # Ping in milliseconds
             if not ping_:
                 self.user.is_online = False
@@ -141,12 +143,12 @@ class UserService(Service):
         self._api = WSGIServer((config['api'][0], config['api'][1]), app)
 
     @db_session
-    def _connection_handler(self, sock, addr):
-        user = User.select(lambda u: u.ip_address == addr[0])
-        if len(user) != 1:
-            raise Exception("User not found")
-        user = user[0]
-        user.is_online = True
+    def _connection_handler(self, sock: socket.socket, addr):
+        user = User.get(ip_address=addr[0])
+        if user is None:
+            sock.shutdown(socket.SHUT_RDWR)
+            sock.close()
+            return
 
         address = Address(addr[0], addr[1])
         remote_service = UserRPCServiceServer(self, address)
