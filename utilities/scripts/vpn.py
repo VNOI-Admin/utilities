@@ -71,9 +71,9 @@ class VPNNode:
     def export_zip(self) -> bytes:
         buffer = BytesIO()
         with AESZipFile(buffer, "w") as zip_f:
-            if self.password != "":
-                zip_f.setpassword(self.password.encode())
-                zip_f.setencryption(WZ_AES, nbits=256)
+            # if self.password != "":
+            #     zip_f.setpassword(self.password.encode())
+            #     zip_f.setencryption(WZ_AES, nbits=256)
 
             zip_f.writestr("rsa_key.pub", self.public_key)
             zip_f.writestr("rsa_key.priv", self.private_key)
