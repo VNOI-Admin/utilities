@@ -84,7 +84,7 @@ class VPNNode:
             zip_f.writestr("tinc.conf", self.tinc_conf)
 
             zip_f.writestr("tinc-up", self.tinc_up)
-            zip_f.writestr("tinc-down", self.tinc_up)
+            zip_f.writestr("tinc-down", self.tinc_down)
 
         return buffer.getvalue()
 
