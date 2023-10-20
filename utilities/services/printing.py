@@ -1,6 +1,6 @@
 import subprocess
 
-from config import ServiceCoord
+from utilities.config import ServiceCoord
 
 from .base import Service
 from .rpc import rpc_method

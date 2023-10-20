@@ -160,7 +160,7 @@ class UserService(Service):
     def __init__(self):
         super().__init__(shard=0)
 
-        self.printing_services = self.connect_to(ServiceCoord('PrintingService', 0))
+        self.printing_service = self.connect_to(ServiceCoord('PrintingService', 0))
         self._api = WSGIServer((config['api'][0], config['api'][1]), app)
 
     @db_session
@@ -178,8 +178,9 @@ class UserService(Service):
 
     @rpc_method_user
     def print(self, source: str, user: User):
-        self.register_print_job(user, source)
+        print_job_id = self.register_print_job(user, source)
         # TODO: Call print method on printer service
+        self.printing_service.print(print_job_id)
         return True
 
     def run(self):
@@ -200,4 +201,5 @@ class UserService(Service):
 
     @db_session
     def register_print_job(self, caller: User, source: str):
-        Printing(caller=caller, source=source)
+        print_job = Printing(caller=caller, source=source)
+        return print_job.id
