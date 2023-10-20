@@ -169,5 +169,12 @@ class UserService(Service):
         super().exit()
 
     @db_session
+    @rpc_method
+    def set_machine_info(self, cpu, mem, user: User):
+        user.cpu = cpu
+        user.ram = mem
+        return True
+
+    @db_session
     def register_print_job(self, caller: User, source: str):
         Printing(caller=caller, source=source)
