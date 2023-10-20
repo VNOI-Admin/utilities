@@ -13,7 +13,7 @@ from gevent.pywsgi import WSGIServer
 from utilities.models import User, Printing
 from utilities.config import config, Address, ServiceCoord
 from .base import Service
-from .rpc import RPCServiceServer, rpc_method
+from .rpc import RPCServiceServer
 
 import logging
 log = logging.getLogger('werkzeug')
@@ -26,6 +26,12 @@ api = Api(app)
 @app.route('/')
 def default():
     return 'Hello, World!'
+
+
+def rpc_method_user(method):
+    method.rpc = True
+    method.permission = 'user'
+    return method
 
 
 @api.resource('/login')
@@ -56,25 +62,26 @@ class UserLogin(Resource):
 
 
 class UserRPCServiceServer(RPCServiceServer):
-    def __init__(self, remote_address):
-        super().__init__(remote_address)
+    def __init__(self, local_service, remote_address):
+        super().__init__(local_service, remote_address)
 
         self._ping = None
 
-    @db_session
     def ping(self):
         while True:
-            print("ping")
-            ping_ = round(ping(self.remote_address.host) * 1000, 3)  # Ping in milliseconds
-            if not ping_:
-                self.user.is_online = False
-                self.user.ping = -1.0
+            with db_session:
+                ping_ = round(ping(self.remote_address.host) * 1000, 3)  # Ping in milliseconds
+                user = User[self.user.id]
+                if not ping_:
+                    user.is_online = False
+                    user.ping = -1.0
+                    return
 
-            if not self.user.is_online:
-                self.user.is_online = True
-            self.user.ping = ping_
+                if not user.is_online:
+                    user.is_online = True
+                user.ping = ping_
 
-            gevent.sleep(config['ping_interval'])
+                gevent.sleep(config['ping_interval'])
 
     def handle(self, sock, user):
         self.user = user
@@ -88,10 +95,24 @@ class UserRPCServiceServer(RPCServiceServer):
         self.user.set_offline()
         return super().disconnect()
 
+    def finalize(self):
+        self._ping.kill()
+        self._ping = None
+        return super().finalize()
+
     def process_data(self, data):
-        data = super().process_data(data)
-        data['__params']['user'] = self.user  # Add user to params
-        return data
+        try:
+            message = json.loads(data.decode('utf-8'))
+        except ValueError:
+            self.disconnect()
+            return
+
+        if message['__params'] is None:
+            message['__params'] = dict()
+
+        message['__params']['user'] = self.user
+
+        self.process_incoming_request(message)
 
     def process_incoming_request(self, request):
         if not {'__id', '__method', '__params'}.issubset(request.keys()):
@@ -120,7 +141,7 @@ class UserRPCServiceServer(RPCServiceServer):
                 response['__error'] = 'Method not found'
             else:
                 try:
-                    response['__data'] = method(*request['__params'])
+                    response['__data'] = method(**request['__params'])
                 except Exception as error:
                     response['__error'] = "%s: %s\n%s" % (error.__class__.__name__, error, error.__traceback__)
 
@@ -150,11 +171,12 @@ class UserService(Service):
             sock.close()
             return
 
+        print("User connected: %s" % user.username)
         address = Address(addr[0], addr[1])
         remote_service = UserRPCServiceServer(self, address)
         remote_service.handle(sock, user)
 
-    @rpc_method
+    @rpc_method_user
     def print(self, source: str, user: User):
         self.register_print_job(user, source)
         # TODO: Call print method on printer service
@@ -169,8 +191,9 @@ class UserService(Service):
         super().exit()
 
     @db_session
-    @rpc_method
+    @rpc_method_user
     def set_machine_info(self, cpu, mem, user: User):
+        user = User[user.id]
         user.cpu = cpu
         user.ram = mem
         return True
