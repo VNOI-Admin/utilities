@@ -70,7 +70,7 @@ class UserRPCServiceServer(RPCServiceServer):
     def ping(self):
         while True:
             with db_session:
-                ping_ = round(ping(self.remote_address.host) * 1000, 3)  # Ping in milliseconds
+                ping_ = ping(self.remote_address.host)  # Ping in milliseconds
                 user = User[self.user.id]
                 if not ping_:
                     user.is_online = False
@@ -79,7 +79,7 @@ class UserRPCServiceServer(RPCServiceServer):
 
                 if not user.is_online:
                     user.is_online = True
-                user.ping = ping_
+                user.ping = round(ping_ * 1000.0, 2)
 
                 gevent.sleep(config['ping_interval'])
 
