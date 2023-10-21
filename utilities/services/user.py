@@ -178,9 +178,9 @@ class UserService(Service):
 
     @rpc_method_user
     def print(self, source: str, user: User):
-        print_job_id = self.register_print_job(user, source)
+        self.register_print_job(user, source)
         # TODO: Call print method on printer service
-        self.printing_service.print(print_job_id)
+        self.printing_service.print(source)
         return True
 
     def run(self):
@@ -202,4 +202,3 @@ class UserService(Service):
     @db_session
     def register_print_job(self, caller: User, source: str):
         print_job = Printing(caller=caller, source=source)
-        return print_job.id

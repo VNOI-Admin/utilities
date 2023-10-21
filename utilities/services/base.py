@@ -68,6 +68,8 @@ class Service:
             print("Error starting service %s: %s" % (self.name, error))
             return False
 
+        print("Service %s started" % self.name)
+
         self.rpc_server.serve_forever()
 
         self._disconnect_all()
