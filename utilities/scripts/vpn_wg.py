@@ -73,7 +73,7 @@ class VPNNode:
         peer_config += "\n"
         self.config += peer_config
 
-
+@db_session
 def create_users() -> list[VPNNode]:
     user_nodes = []
     with open(path.join("data", "user.csv"), "r") as node_list_f:
