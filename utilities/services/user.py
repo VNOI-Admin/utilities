@@ -58,7 +58,7 @@ class UserLogin(Resource):
             return {'error': 'User configuration not found'}, 404
 
         # TODO: Return VPN configurations
-        return send_file(os.path.join('..', '..', 'data', 'configs', f'{username}.zip'))
+        return send_file(os.path.join('..', '..', 'data', 'configs', f'{username}.conf'))
 
 
 class UserRPCServiceServer(RPCServiceServer):

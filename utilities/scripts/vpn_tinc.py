@@ -1,5 +1,5 @@
 from io import BytesIO, StringIO
-from Crypto.PublicKey import RSA
+from Cryptodome.PublicKey import RSA
 from pyzipper import AESZipFile, WZ_AES
 from os import path
 from csv import DictWriter, DictReader
@@ -101,7 +101,9 @@ def create_users() -> list[VPNNode]:
                 USER_BASE_SUBNET + len(user_nodes) + 1).exploded
             assert expected_subnet_ip == subnet_ip or subnet_ip == "" or subnet_ip is None
 
+            print("Creating user", name)
             user_nodes.append(VPNNode(name, password, expected_subnet_ip))
+            print("Created user", name)
 
             User(username=name, password=password, ip_address=expected_subnet_ip)
     return user_nodes
@@ -119,6 +121,7 @@ def write_users(user_nodes: list[VPNNode]):
             "SubnetIP": node.subnet_ip})
         with open(path.join("data", "configs", f"{node.name}.zip"), "wb") as f:
             f.write(node.export_zip())
+        print("Wrote user", node.name)
 
     file_content = buffer.getvalue()
     file_content = "\n".join(
