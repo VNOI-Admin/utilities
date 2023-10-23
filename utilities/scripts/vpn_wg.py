@@ -68,8 +68,9 @@ class VPNNode:
         peer_config += f"PublicKey = {node.public_key}\n"
         if node.subnet_ip == CENTRAL_BASE_SUBNET.exploded:
             peer_config += f"AllowedIPs = 0.0.0.0/0, ::/0\n"  # This will be dealt with by custom iptables rules
-            peer_config += f"Endpoint = {endpoint}\n"
+        peer_config += f"Endpoint = {endpoint}\n"
         peer_config += f"AllowedIPs = {node.subnet_ip}/32 \n"
+        peer_config += f"PersistentKeepalive = 25\n"
         peer_config += "\n"
         self.config += peer_config
 
