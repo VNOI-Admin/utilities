@@ -1,3 +1,6 @@
+from gevent import monkey
+monkey.patch_all()
+
 import os
 import json
 import socket
@@ -54,7 +57,7 @@ class UserLogin(Resource):
             return {'error': 'User not found'}, 404
         elif not user.verify_password(password):
             return {'error': 'Incorrect password'}, 401
-        elif not os.path.exists(os.path.join('data', 'configs', f'{username}.zip')):
+        elif not os.path.exists(os.path.join('data', 'configs', f'{username}.conf')):
             return {'error': 'User configuration not found'}, 404
 
         # TODO: Return VPN configurations
@@ -65,40 +68,9 @@ class UserRPCServiceServer(RPCServiceServer):
     def __init__(self, local_service, remote_address):
         super().__init__(local_service, remote_address)
 
-        self._ping = None
-
-    def ping(self):
-        while True:
-            with db_session:
-                ping_ = ping(self.remote_address.host)  # Ping in milliseconds
-                user = User[self.user.id]
-                if not ping_:
-                    user.is_online = False
-                    user.ping = -1.0
-                    return
-
-                if not user.is_online:
-                    user.is_online = True
-                user.ping = round(ping_ * 1000.0, 2)
-
-                gevent.sleep(config['ping_interval'])
-
     def handle(self, sock, user):
         self.user = user
-        self._ping = gevent.spawn(self.ping)
         return super().handle(sock)
-
-    @db_session
-    def disconnect(self):
-        self._ping.kill()
-        self._ping = None
-        self.user.set_offline()
-        return super().disconnect()
-
-    def finalize(self):
-        self._ping.kill()
-        self._ping = None
-        return super().finalize()
 
     def process_data(self, data):
         try:
@@ -161,6 +133,7 @@ class UserService(Service):
         super().__init__(shard=0)
 
         self.printing_service = self.connect_to(ServiceCoord('PrintingService', 0))
+        self._ping = None
         self._api = WSGIServer((config['api'][0], config['api'][1]), app)
 
     @db_session
@@ -189,6 +162,26 @@ class UserService(Service):
 
     def exit(self):
         self._api.stop()
+        super().exit()
+
+    @db_session
+    def ping(self):
+        for user in User.select():
+            ping_ = ping(user.ip_address)
+            if not ping_:
+                user.is_online = False
+                user.ping = -1.0
+            else:
+                user.is_online = True
+                user.ping = round(ping_ * 1000.0, 2)
+        gevent.sleep(config['ping_interval'])
+
+    def run(self):
+        self._ping = gevent.spawn(self.ping)
+        return super().run()
+
+    def exit(self):
+        self._ping.kill()
         super().exit()
 
     @db_session
