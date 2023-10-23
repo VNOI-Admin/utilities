@@ -158,34 +158,29 @@ class UserService(Service):
 
     def run(self):
         self._api.start()
-        return super().run()
-
-    def exit(self):
-        self._api.stop()
-        super().exit()
-
-    @db_session
-    def ping(self):
-        for user in User.select():
-            try:
-                ping_ = ping(user.ip_address)
-            except:
-                ping_ = False
-            if not ping_:
-                user.is_online = False
-                user.ping = -1.0
-            else:
-                user.is_online = True
-                user.ping = round(ping_ * 1000.0, 2)
-        gevent.sleep(config['ping_interval'])
-
-    def run(self):
         self._ping = gevent.spawn(self.ping)
         return super().run()
 
     def exit(self):
+        self._api.stop()
         self._ping.kill()
         super().exit()
+
+    @db_session
+    def ping(self):
+        while True:
+            for user in User.select():
+                try:
+                    ping_ = ping(user.ip_address)
+                except:
+                    ping_ = False
+                if not ping_:
+                    user.is_online = False
+                    user.ping = -1.0
+                else:
+                    user.is_online = True
+                    user.ping = round(ping_ * 1000.0, 2)
+            gevent.sleep(config['ping_interval'])
 
     @db_session
     @rpc_method_user
