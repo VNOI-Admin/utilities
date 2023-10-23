@@ -67,9 +67,11 @@ class VPNNode:
         peer_config += f"[Peer]\n"
         peer_config += f"PublicKey = {node.public_key}\n"
         if node.subnet_ip == CENTRAL_BASE_SUBNET.exploded:
-            peer_config += f"AllowedIPs = 0.0.0.0/0, ::/0\n"  # This will be dealt with by custom iptables rules
-        peer_config += f"Endpoint = {endpoint}\n"
-        peer_config += f"AllowedIPs = {node.subnet_ip}/32 \n"
+            peer_config += f"AllowedIPs = 10.0.0.0/8, 0.0.0.0/0\n"  # This will be dealt with by custom iptables rules
+        if self.subnet_ip == CENTRAL_BASE_SUBNET.exploded:
+            peer_config += f"AllowedIPs = {node.subnet_ip}/32\n"
+        else:
+            peer_config += f"Endpoint = {endpoint}\n"
         peer_config += f"PersistentKeepalive = 25\n"
         peer_config += "\n"
         self.config += peer_config
@@ -116,9 +118,9 @@ def create_all():
     for service in service_nodes:
         central.add_peer(service)
         service.add_peer(central)
-        for user in user_nodes:
-            service.add_peer(user)
-            user.add_peer(service)
+        # for user in user_nodes:
+        #     service.add_peer(user)
+        #     user.add_peer(service)
 
     for user in user_nodes:
         user.add_peer(central)
