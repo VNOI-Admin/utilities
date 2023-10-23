@@ -67,7 +67,7 @@ class VPNNode:
         peer_config += f"[Peer]\n"
         peer_config += f"PublicKey = {node.public_key}\n"
         if node.subnet_ip == CENTRAL_BASE_SUBNET.exploded:
-            peer_config += f"AllowedIPs = 10.0.0.0/8, 0.0.0.0/0\n"  # This will be dealt with by custom iptables rules
+            peer_config += f"AllowedIPs = 10.0.0.0/8\n"  # This will be dealt with by custom iptables rules
         if self.subnet_ip == CENTRAL_BASE_SUBNET.exploded:
             peer_config += f"AllowedIPs = {node.subnet_ip}/32\n"
         else:
