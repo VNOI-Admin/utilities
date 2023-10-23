@@ -163,7 +163,7 @@ class UserService(Service):
 
     def exit(self):
         self._api.stop()
-        self._ping.kill()
+        self._ping.kill(block=False)
         super().exit()
 
     @db_session
