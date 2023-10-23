@@ -167,7 +167,10 @@ class UserService(Service):
     @db_session
     def ping(self):
         for user in User.select():
-            ping_ = ping(user.ip_address)
+            try:
+                ping_ = ping(user.ip_address)
+            except:
+                ping_ = False
             if not ping_:
                 user.is_online = False
                 user.ping = -1.0
