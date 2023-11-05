@@ -31,10 +31,10 @@ class Service:
         self.rpc_server = StreamServer(address, self._connection_handler)
 
     def _connection_handler(self, sock, addr):
+        print("Client connected: %s:%s" % (addr[0], addr[1]))
         address = Address(addr[0], addr[1])
         remote_service = RPCServiceServer(self, address)
         remote_service.handle(sock)
-        print("Client connected: %s:%s" % (addr[0], addr[1]))
 
     def connect_to(self, coord, on_connect=None, on_disconnect=None):
         if coord not in self.remote_services:

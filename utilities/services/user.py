@@ -15,6 +15,7 @@ from gevent.pywsgi import WSGIServer
 
 from utilities.models import User, Printing
 from utilities.config import config, Address, ServiceCoord
+from utilities.models import db
 from .base import Service
 from .rpc import RPCServiceServer
 
@@ -151,9 +152,10 @@ class UserService(Service):
 
     @rpc_method_user
     def print(self, source: str, user: User):
-        self.register_print_job(user, source)
+        print("Get print job from %s" % user.username)
         # TODO: Call print method on printer service
-        self.printing_service.print(source)
+        self.printing_service.print(source=source)
+        print("Print job done")
         return True
 
     def run(self):
@@ -166,20 +168,20 @@ class UserService(Service):
         self._ping.kill(block=False)
         super().exit()
 
-    @db_session
     def ping(self):
         while True:
-            for user in User.select():
-                try:
-                    ping_ = ping(user.ip_address)
-                except:
-                    ping_ = False
-                if not ping_:
-                    user.is_online = False
-                    user.ping = -1.0
-                else:
-                    user.is_online = True
-                    user.ping = round(ping_ * 1000.0, 2)
+            with db_session:
+                for user in User.select():
+                    try:
+                        ping_ = ping(user.ip_address)
+                    except:
+                        ping_ = False
+                    if not ping_:
+                        user.is_online = False
+                        user.ping = -1.0
+                    else:
+                        user.is_online = True
+                        user.ping = round(ping_ * 1000.0, 2)
             gevent.sleep(config['ping_interval'])
 
     @db_session
@@ -189,7 +191,3 @@ class UserService(Service):
         user.cpu = cpu
         user.ram = mem
         return True
-
-    @db_session
-    def register_print_job(self, caller: User, source: str):
-        print_job = Printing(caller=caller, source=source)

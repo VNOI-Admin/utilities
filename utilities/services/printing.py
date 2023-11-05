@@ -14,3 +14,4 @@ class PrintingService(Service):
     def print(self, source):
         print("Printing")
         subprocess.Popen(f'lpr -o media=A4 -o prettyprint -o page-border=single -o fit-to-page {source}')
+        return True

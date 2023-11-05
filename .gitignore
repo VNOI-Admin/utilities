@@ -3,3 +3,4 @@ database.sqlite
 config.json
 .DS_Store
 .vscode/
+*.sqlite-journal
