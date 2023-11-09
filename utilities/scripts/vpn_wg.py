@@ -58,7 +58,7 @@ class VPNNode:
         config += f"PrivateKey = {self.private_key}\n"
         config += f"Address = {self.subnet_ip}/32\n"
         config += f"ListenPort = {listen_port}\n"
-        config += f"DNS = {dns}\n"
+        # config += f"DNS = {dns}\n"
         config += "\n"
         return config
 
