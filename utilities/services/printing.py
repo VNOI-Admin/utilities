@@ -28,7 +28,8 @@ class Print(Resource):
         if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            subprocess.Popen(f'lpr -o media=A4 -o prettyprint -o page-border=single -o fit-to-page {os.path.join(app.config["UPLOAD_FOLDER"], filename)}')
+            subprocess.Popen(f'lpr -o media=A4 -o prettyprint -o page-border=single -o fit-to-page '
+                             '{os.path.join(app.config["UPLOAD_FOLDER"], filename)}', shell=True)
             return {'success': True}, 200
         else:
             return {'error': 'No file selected'}, 400

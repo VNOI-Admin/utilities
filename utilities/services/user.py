@@ -29,7 +29,7 @@ app = Flask(__name__)
 api = Api(app)
 
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
-app.config['UPLOAD_FOLDER'] = os.path.join('data', 'uploads')
+app.config['UPLOAD_FOLDER'] = os.path.join('.', 'data', 'uploads')
 
 @app.route('/')
 def default():
