@@ -3,11 +3,13 @@ monkey.patch_all()
 
 import os
 import json
+import requests
 import socket
 
 from ping3 import ping
 from flask import Flask, send_file
-from flask_restful import Api, Resource, reqparse
+from werkzeug.utils import secure_filename
+from flask_restful import Api, Resource, reqparse, request
 from pony.orm import db_session
 
 import gevent
@@ -26,6 +28,8 @@ log.setLevel(logging.ERROR)
 app = Flask(__name__)
 api = Api(app)
 
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
+app.config['UPLOAD_FOLDER'] = os.path.join('data', 'uploads')
 
 @app.route('/')
 def default():
@@ -63,6 +67,31 @@ class UserLogin(Resource):
 
         # TODO: Return VPN configurations
         return send_file(os.path.join('..', '..', 'data', 'configs', f'{username}.conf'))
+
+
+@api.resource('/print')
+class Print(Resource):
+    @db_session
+    def post(self):
+        ip = request.remote_addr
+        user = User.select(lambda u: u.ip_address == ip).first()
+        if not user:
+            return {'error': 'User not found'}, 404
+
+        file = request.files['file']
+        if file.filename == '':
+            return {'error': 'No file selected'}, 400
+
+        if file:
+            filename = f'{user.username}_{secure_filename(file.filename)}'
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            Printing(caller=user, source=filename)
+            service_address = config['services']['PrintingService'][0]
+            r = requests.post(f'http://{service_address[0]}:{service_address[1]}/print',
+                              files={'file': open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'rb')})
+            return {'success': True}, 200
+        else:
+            return {'error': 'No file selected'}, 400
 
 
 class UserRPCServiceServer(RPCServiceServer):
