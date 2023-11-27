@@ -1,10 +1,9 @@
 from gevent import monkey
 monkey.patch_all()
 
+import signal
 import os
-import json
 import requests
-import socket
 
 from ping3 import ping
 from flask import Flask, send_file
@@ -13,13 +12,9 @@ from flask_restful import Api, Resource, reqparse, request
 from pony.orm import db_session
 
 import gevent
-from gevent.pywsgi import WSGIServer
 
 from utilities.models import User, Printing
-from utilities.config import config, Address, ServiceCoord
-from utilities.models import db
-from .base import Service
-from .rpc import RPCServiceServer
+from utilities.config import config
 
 import logging
 log = logging.getLogger('werkzeug')
@@ -94,129 +89,54 @@ class Print(Resource):
             return {'error': 'No file selected'}, 400
 
 
-class UserRPCServiceServer(RPCServiceServer):
-    def __init__(self, local_service, remote_address):
-        super().__init__(local_service, remote_address)
-
-    def handle(self, sock, user):
-        self.user = user
-        return super().handle(sock)
-
-    def process_data(self, data):
-        try:
-            message = json.loads(data.decode('utf-8'))
-        except ValueError:
-            self.disconnect()
-            return
-
-        if message['__params'] is None:
-            message['__params'] = dict()
-
-        message['__params']['user'] = self.user
-
-        self.process_incoming_request(message)
-
-    def process_incoming_request(self, request):
-        if not {'__id', '__method', '__params'}.issubset(request.keys()):
-            self.disconnect()
-            return
-
-        id_ = request['__id']
-
-        self.pending_incoming_requests_threads.add(gevent.getcurrent())
-
-        response = {
-            '__id': id_,
-            '__data': None,
-            '__error': None
-        }
-
-        method_name = request['__method']
-
-        if not hasattr(self.local_service, method_name):
-            response['__error'] = 'Method not found'
-        else:
-            method = getattr(self.local_service, method_name)
-            if not getattr(method, 'rpc', False):
-                response['__error'] = 'Method not found'
-            elif not getattr(method, 'permission', None) == 'user':  # Restrict down to user
-                response['__error'] = 'Method not found'
-            else:
-                try:
-                    response['__data'] = method(**request['__params'])
-                except Exception as error:
-                    response['__error'] = "%s: %s\n%s" % (error.__class__.__name__, error, error.__traceback__)
-
-        try:
-            data = json.dumps(response).encode('utf-8')
-        except (TypeError, ValueError):
-            return
-
-        try:
-            self._write(data)
-        except OSError:
-            return
-
-
-class UserService(Service):
+@api.resource('/performance')
+class Performance(Resource):
     def __init__(self):
-        super().__init__(shard=0)
-
-        self.printing_service = self.connect_to(ServiceCoord('PrintingService', 0))
-        self._ping = None
-        self._api = WSGIServer((config['api'][0], config['api'][1]), app)
-
-    @db_session
-    def _connection_handler(self, sock: socket.socket, addr):
-        user = User.get(ip_address=addr[0])
-        if user is None:
-            sock.shutdown(socket.SHUT_RDWR)
-            sock.close()
-            return
-
-        print("User connected: %s" % user.username)
-        address = Address(addr[0], addr[1])
-        remote_service = UserRPCServiceServer(self, address)
-        remote_service.handle(sock, user)
-
-    @rpc_method_user
-    def print(self, source: str, user: User):
-        print("Get print job from %s" % user.username)
-        # TODO: Call print method on printer service
-        self.printing_service.print(source=source)
-        print("Print job done")
-        return True
-
-    def run(self):
-        self._api.start()
-        self._ping = gevent.spawn(self.ping)
-        return super().run()
-
-    def exit(self):
-        self._api.stop()
-        self._ping.kill(block=False)
-        super().exit()
-
-    def ping(self):
-        while True:
-            with db_session:
-                for user in User.select():
-                    try:
-                        ping_ = ping(user.ip_address)
-                    except:
-                        ping_ = False
-                    if not ping_:
-                        user.is_online = False
-                        user.ping = -1.0
-                    else:
-                        user.is_online = True
-                        user.ping = round(ping_ * 1000.0, 2)
-            gevent.sleep(config['ping_interval'])
+        super().__init__()
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('cpu', location='form')
+        self.parser.add_argument('mem', location='form')
 
     @db_session
-    @rpc_method_user
-    def set_machine_info(self, cpu, mem, user: User):
-        user = User[user.id]
+    def post(self):
+        ip = request.remote_addr
+        user = User.select(lambda u: u.ip_address == ip).first()
+        if not user:
+            return {'error': 'User not found'}, 404
+
+        args = self.parser.parse_args()
+        cpu = args['cpu'] or ""
+        mem = args['mem'] or ""
         user.cpu = cpu
         user.ram = mem
-        return True
+        return {'success': True}, 200
+
+
+def ping_users():
+    while True:
+        with db_session:
+            for user in User.select():
+                try:
+                    ping_ = ping(user.ip_address)
+                except:
+                    ping_ = False
+                if not ping_:
+                    user.is_online = False
+                    user.ping = -1.0
+                else:
+                    user.is_online = True
+                    user.ping = round(ping_ * 1000.0, 2)
+        print("DONE")
+        gevent.sleep(config["ping_interval"])
+
+
+def exit():
+    os._exit(0)
+
+
+ping_thread = None
+gevent.signal_handler(signal.SIGINT, exit)
+
+def main():
+    global ping_thread
+    ping_thread = gevent.spawn(ping_users)
