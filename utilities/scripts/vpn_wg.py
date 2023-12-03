@@ -79,18 +79,21 @@ class VPNNode:
 @db_session
 def create_users() -> list[VPNNode]:
     user_nodes = []
+
     with open(path.join("data", "user.csv"), "r") as node_list_f:
         for node in DictReader(node_list_f):
             name, password = node["Name"], node["Password"]
             subnet_ip = node["SubnetIP"]
 
-            expected_subnet_ip = (
-                USER_BASE_SUBNET + len(user_nodes) + 1).exploded
-            assert expected_subnet_ip == subnet_ip or subnet_ip == "" or subnet_ip is None
+            user_nodes.append(VPNNode(name, password, subnet_ip))
 
-            user_nodes.append(VPNNode(name, password, expected_subnet_ip))
+            if User.select(lambda u: u.username == name).count() == 0:
+                User(username=name, password=password, ip_address=subnet_ip)
+            else:
+                user = User.select(lambda u: u.username == name).first()
+                user.password = password
+                user.ip_address = subnet_ip
 
-            User(username=name, password=password, ip_address=expected_subnet_ip)
     return user_nodes
 
 
@@ -101,11 +104,8 @@ def create_services() -> list[VPNNode]:
             name, password = node["Name"], node["Password"]
             public_ip, subnet_ip = node["PublicIP"], node["SubnetIP"]
 
-            expected_subnet_ip = (SERVICE_BASE_SUBNET +
-                                  len(service_nodes) + 1).exploded
-            assert expected_subnet_ip == subnet_ip or subnet_ip == "" or subnet_ip is None
 
-            service_nodes.append(VPNNode(name, password, expected_subnet_ip, public_ip))
+            service_nodes.append(VPNNode(name, password, subnet_ip, public_ip))
     return service_nodes
 
 
@@ -118,9 +118,6 @@ def create_all():
     for service in service_nodes:
         central.add_peer(service)
         service.add_peer(central)
-        # for user in user_nodes:
-        #     service.add_peer(user)
-        #     user.add_peer(service)
 
     for user in user_nodes:
         user.add_peer(central)
