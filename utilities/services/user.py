@@ -130,6 +130,19 @@ def ping_users():
         gevent.sleep(config["ping_interval"])
 
 
+@api.resource('/user/<string:username>')
+class UserInfo(Resource):
+    def __init__(self):
+        super().__init__()
+
+    def get(self, username):
+        with db_session:
+            user = User.select(lambda u: u.username == username).first()
+            if not user:
+                return {'error': 'User not found'}, 404
+            return {'username': user.username, 'ip_address': user.ip_address, 'is_online': user.is_online}, 200
+
+
 def exit():
     os._exit(0)
 
