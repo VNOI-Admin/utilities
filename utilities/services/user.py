@@ -138,7 +138,6 @@ def ping_batch(batch):
             else:
                 user.is_online = True
                 user.ping = round(ping_ * 1000.0, 2)
-            print(f"{user.username} {user.is_online} {user.ping}")
 
 
 @api.resource('/user/<string:username>')
