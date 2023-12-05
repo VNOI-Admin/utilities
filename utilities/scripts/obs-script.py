@@ -1,8 +1,13 @@
 import obspython as obs
+
 import urllib.request
 import urllib.error
 import requests
+from ctypes import *
+from ctypes.util import find_library
 from contextlib import contextmanager, ExitStack
+
+obslib = CDLL(find_library("obs"))
 
 url         = ""
 team_list_path = ""
@@ -13,6 +18,14 @@ VLC_SOURCE_ID = "vlc_source"
 
 # ------------------------------------------------------------
 # Helper functions
+
+def wrap(funcname, restype, argtypes):
+    """Simplify wrapping ctypes functions in obsffi"""
+    func = getattr(obslib, funcname)
+    func.restype = restype
+    func.argtypes = argtypes
+    globals()["g_" + funcname] = func
+    return func
 
 # ------------------------------------------------------------
 
@@ -86,8 +99,14 @@ def generate_scene(props, prop):
 
         obs.obs_data_set_array(settings, "playlist", playlist_settings_array)
 
+        text_source = obs.obs_source_create_private("text_ft2_source_v2", "%s text" % team, None)
+        settings = obs.obs_source_get_settings(text_source)
+        obs.obs_data_set_string(settings, "text", team)
+
         group = obs.obs_scene_add_group(scene, group_name)
         obs.obs_sceneitem_group_add_item(group, obs.obs_scene_add(scene, vlc_source))
+        obs.obs_sceneitem_group_add_item(group, obs.obs_scene_add(scene, text_source))
+
 
         print(f"Added {team} to scene")
 
@@ -96,30 +115,56 @@ def debug(props, prop):
     global url
     global team_list
 
-    scene = obs.obs_scene_from_source(obs.obs_get_source_by_name(SCENE_NAME))
-    vlc_source = obs.obs_scene_find_source_recursive(scene, "final01 source")
-    vlc_source = obs.obs_sceneitem_get_source(vlc_source)
-    print(vlc_source)
-    settings = obs.obs_source_get_settings(vlc_source)
-    psettings = obs.obs_source_get_private_settings(vlc_source)
-    dsettings = obs.obs_data_get_defaults(settings)
-    pdsettings = obs.obs_data_get_defaults(psettings)
+    for source in obs.obs_enum_sources():
+        # print identifier and type of every source
+        print(f"{obs.obs_source_get_name(source)}: {obs.obs_source_get_id(source)}")
 
-    playlist_value = obs.obs_data_create()
-    obs.obs_data_set_string(playlist_value, "value", "http://")
-    obs.obs_data_set_bool(playlist_value, "selected", False)
-    obs.obs_data_set_bool(playlist_value, "hidden", False)
+    # Create a CFUNCTYPE of bool (*)(void *,obs_output_t *)
 
-    print(obs.obs_data_array_push_back(obs.obs_data_get_array(settings, "playlist"), playlist_value))
+    # if obs.obs_enum_transition_types(0, byref(typename)):
+    #     print(dir(typename))
+    #     typename = typename.value
 
-    print("[---------- settings ----------")
-    print(obs.obs_data_get_json(settings))
-    # print("---------- private_settings ----------")
-    # print(obs.obs_data_get_json(psettings))
-    # print("---------- default settings for this source type ----------")
-    # print(obs.obs_data_get_json(dsettings))
-    # print("---------- default private settings for this source type ----------")
-    # print(obs.obs_data_get_json(pdsettings))
+    # print("typename =", typename)
+
+    # scene = obs.obs_scene_from_source(obs.obs_get_source_by_name(SCENE_NAME))
+    # vlc_source = obs.obs_scene_find_source_recursive(scene, "backup1 group")
+    # vlc_source = obs.obs_sceneitem_get_source(vlc_source)
+
+    # print(obs.obs_source_is_hidden(vlc_source))
+
+    # class obs_output_t(Structure):
+    #     pass
+
+    # class video_t(Structure):
+    #     pass
+
+    # class obs_encoder_t(Structure):
+    #     pass
+
+    # callback_t = CFUNCTYPE(c_bool, c_void_p, POINTER(obs_output_t))
+
+    # g_obs_output_get_name = wrap("obs_output_get_name", c_char_p, [POINTER(obs_output_t)])
+    # g_obs_output_set_preferred_size = \
+    #     wrap("obs_output_set_preferred_size", None, [POINTER(obs_output_t), c_int, c_int])
+    # g_obs_output_get_height = wrap("obs_output_get_height", c_uint32, [POINTER(obs_output_t)])
+    # g_obs_output_get_video_encoder = \
+    #     wrap("obs_output_get_video_encoder", POINTER(obs_encoder_t), [POINTER(obs_output_t)])
+    # g_obs_output_video = wrap("obs_output_video", POINTER(video_t), [POINTER(obs_output_t)])
+
+
+    # def callback(a, b):
+    #     output = b.contents
+    #     print(g_obs_output_get_name(output))
+    #     if b"group" in g_obs_output_get_name(output):
+    #         g_obs_output_set_preferred_size(output, 1920, 1080)
+    #         print(g_obs_output_get_height(output))
+    #         video = g_obs_output_get_video_encoder(output).contents
+    #         print(video)
+    #     return True
+
+    # g_obs_enum_outputs = wrap("obs_enum_scenes", c_bool, [callback_t, c_void_p])
+    # g_obs_enum_outputs(callback_t(callback), None)
 
 # ------------------------------------------------------------
 

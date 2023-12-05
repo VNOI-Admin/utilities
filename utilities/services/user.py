@@ -115,19 +115,30 @@ class Performance(Resource):
 def ping_users():
     while True:
         with db_session:
-            for user in User.select():
-                try:
-                    ping_ = ping(user.ip_address)
-                except:
-                    ping_ = False
-                if not ping_:
-                    user.is_online = False
-                    user.ping = -1.0
-                else:
-                    user.is_online = True
-                    user.ping = round(ping_ * 1000.0, 2)
+            users = User.select()
+            batch_size = 5
+            batch = []
+            for i in range(0, len(users), batch_size):
+                # Create a gevnet batch
+                batch.append(gevent.spawn(ping_batch, users[i:i + batch_size]))
+            gevent.joinall(batch)
         print("DONE")
-        gevent.sleep(config["ping_interval"])
+
+
+def ping_batch(batch):
+    with db_session:
+        for user in batch:
+            try:
+                ping_ = ping(user.ip_address)
+            except:
+                ping_ = False
+            if not ping_:
+                user.is_online = False
+                user.ping = -1.0
+            else:
+                user.is_online = True
+                user.ping = round(ping_ * 1000.0, 2)
+            print(f"{user.username} {user.is_online} {user.ping}")
 
 
 @api.resource('/user/<string:username>')
