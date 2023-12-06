@@ -83,7 +83,7 @@ class Print(Resource):
             Printing(caller=user, source=filename)
             service_address = config['services']['PrintingService'][0]
             r = requests.post(f'http://{service_address[0]}:{service_address[1]}/print',
-                              files={'file': open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'rb')})
+                              files={'file': open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'rb')}, timeout=5)
             return {'success': True}, 200
         else:
             return {'error': 'No file selected'}, 400
