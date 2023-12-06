@@ -99,13 +99,13 @@ def generate_scene(props, prop):
 
         obs.obs_data_set_array(settings, "playlist", playlist_settings_array)
 
-        text_source = obs.obs_source_create_private("text_ft2_source_v2", "%s text" % team, None)
-        settings = obs.obs_source_get_settings(text_source)
-        obs.obs_data_set_string(settings, "text", team)
+        # text_source = obs.obs_source_create_private("text_ft2_source_v2", "%s text" % team, None)
+        # settings = obs.obs_source_get_settings(text_source)
+        # obs.obs_data_set_string(settings, "text", team)
 
         group = obs.obs_scene_add_group(scene, group_name)
         obs.obs_sceneitem_group_add_item(group, obs.obs_scene_add(scene, vlc_source))
-        obs.obs_sceneitem_group_add_item(group, obs.obs_scene_add(scene, text_source))
+        # obs.obs_sceneitem_group_add_item(group, obs.obs_scene_add(scene, text_source))
 
 
         print(f"Added {team} to scene")
